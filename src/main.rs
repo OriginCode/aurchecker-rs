@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
+use crate::parser::check_existance;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs};
-use crate::parser::check_existance;
 
 mod network;
 mod parser;

@@ -3,7 +3,11 @@ use anyhow::{anyhow, Result};
 use git2::Repository;
 use reqwest::blocking::Client;
 use serde::Deserialize;
-use std::{collections::HashMap, path::Path, process::{Command, Stdio}};
+use std::{
+    collections::HashMap,
+    path::Path,
+    process::{Command, Stdio},
+};
 
 const AUR_RPC_URL: &str = "https://aur.archlinux.org/rpc/?v=5&type=info&arg[]=";
 const AUR_URL: &str = "https://aur.archlinux.org/";
@@ -40,10 +44,10 @@ fn fetch_update(pkgname: &str, pkgclone_path: &str) -> Result<()> {
     if parser::check_existance(&pkgpath) {
         println!("Updating repo of {}", pkgname);
         Command::new("git")
-                .current_dir(Path::new(&pkgpath))
-                .arg("pull")
-                .stdout(Stdio::null())
-                .spawn()?;
+            .current_dir(Path::new(&pkgpath))
+            .arg("pull")
+            .stdout(Stdio::null())
+            .spawn()?;
     } else {
         println!("Cloning repo of {}", pkgname);
         Repository::clone(&pkgurl, Path::new(&pkgpath))?;
