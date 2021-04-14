@@ -1,0 +1,4 @@
+{
+    "pkgListPath": "path/to/pkgs.json",
+    "pkgClonePath": "path/to/dir/for/clone/repos"
+}
