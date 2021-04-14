@@ -2,14 +2,14 @@
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, fs};
 use crate::parser::check_existance;
 
 mod network;
 mod parser;
 
 const DEFAULT_LIST_PATH: &str = ".config/aurchk/pkgs.json";
-const DEFAULT_CLONE_PATH: &str = ".cache/aurchk/";
+const DEFAULT_CLONE_PATH: &str = ".cache/aurchk";
 const CONFIG_PATH: &str = ".config/aurchk/config.json";
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -53,23 +53,9 @@ async fn main() -> Result<()> {
         config = write_default_conf(&home, &config_path)?;
     }
 
-    let pkglist_path = format!("{}/{}", home, DEFAULT_LIST_PATH);
-    let pkglist: HashMap<String, String>;
-    if check_existance(&pkglist_path) {
-        let pkglist_data = fs::read(&config.pkgListPath)?;
-        pkglist = serde_json::from_slice(&pkglist_data)?;
-        println!("{:?}", pkglist)
-    } else {
-        return Err(anyhow!(
-            "Package list not found, consider write a list manually."
-        ));
-    }
-
-    let pkgclone_path = format!("{}/{}", home, DEFAULT_CLONE_PATH);
-    if !check_existance(&pkgclone_path) {
-        fs::create_dir(Path::new(&pkgclone_path))?;
-    }
-    let newpkglist = network::fetch_updates(&pkglist, &pkgclone_path).await?;
+    let pkglist_data = fs::read(&config.pkgListPath)?;
+    let pkglist: HashMap<String, String> = serde_json::from_slice(&pkglist_data)?;
+    let newpkglist = network::fetch_updates(&pkglist, &config.pkgClonePath)?;
     let pkglist_file = fs::File::create(&config.pkgListPath)?;
     serde_json::to_writer_pretty(pkglist_file, &newpkglist)?;
 
