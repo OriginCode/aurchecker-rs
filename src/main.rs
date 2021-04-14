@@ -36,8 +36,7 @@ fn write_default_conf(home: &str, path: &str) -> Result<Config> {
     Ok(default_conf)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let home: String;
     if let Some(s) = dirs::home_dir() {
         home = s.into_os_string().into_string().unwrap();
