@@ -1,14 +1,15 @@
 #![allow(non_snake_case)]
 
-use serde::{Serialize, Deserialize};
-use std::{path::Path, fs, collections::HashMap};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fs, path::Path};
+use crate::parser::check_existance;
 
 mod network;
 mod parser;
 
-const DEFAULT_LIST_PATH: &str = ".config/aurchk/pkgs.json"; 
-const DEFAULT_CLONE_PATH: &str = ".cache/aurchk/"; 
+const DEFAULT_LIST_PATH: &str = ".config/aurchk/pkgs.json";
+const DEFAULT_CLONE_PATH: &str = ".cache/aurchk/";
 const CONFIG_PATH: &str = ".config/aurchk/config.json";
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,11 +36,6 @@ fn write_default_conf(home: &str, path: &str) -> Result<Config> {
     Ok(default_conf)
 }
 
-fn check_existance(path: &str) -> bool {
-    let p = Path::new(path);
-    p.exists()
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let home: String;
@@ -64,9 +60,16 @@ async fn main() -> Result<()> {
         pkglist = serde_json::from_slice(&pkglist_data)?;
         println!("{:?}", pkglist)
     } else {
-        return Err(anyhow!("Package list not found, consider write a list manually."))
+        return Err(anyhow!(
+            "Package list not found, consider write a list manually."
+        ));
     }
-    let newpkglist = network::fetch_versions(&pkglist).await?;
+
+    let pkgclone_path = format!("{}/{}", home, DEFAULT_CLONE_PATH);
+    if !check_existance(&pkgclone_path) {
+        fs::create_dir(Path::new(&pkgclone_path))?;
+    }
+    let newpkglist = network::fetch_updates(&pkglist, &pkgclone_path).await?;
     let pkglist_file = fs::File::create(&config.pkgListPath)?;
     serde_json::to_writer_pretty(pkglist_file, &newpkglist)?;
 
