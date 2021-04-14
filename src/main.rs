@@ -40,7 +40,8 @@ fn check_existance(path: &str) -> bool {
     p.exists()
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let home: String;
     if let Some(s) = dirs::home_dir() {
         home = s.into_os_string().into_string().unwrap();
@@ -57,14 +58,15 @@ fn main() -> Result<()> {
     }
 
     let pkglist_path = format!("{}/{}", home, DEFAULT_LIST_PATH);
-    let mut pkglist: HashMap<String, String>;
+    let pkglist: HashMap<String, String>;
     if check_existance(&pkglist_path) {
         let pkglist_data = fs::read(&config.pkgListPath)?;
         pkglist = serde_json::from_slice(&pkglist_data)?;
+        println!("{:?}", pkglist)
     } else {
         return Err(anyhow!("Package list not found, consider write a list manually."))
     }
-    let newpkglist = network::fetch_versions(&mut pkglist)?;
+    let newpkglist = network::fetch_versions(&pkglist).await?;
     let pkglist_file = fs::File::create(&config.pkgListPath)?;
     serde_json::to_writer_pretty(pkglist_file, &newpkglist)?;
 

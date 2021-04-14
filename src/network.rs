@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use serde::Deserialize;
-use reqwest::blocking::Client;
+use reqwest;
 use crate::parser;
 
 const AUR_RPC_LINK: &str = "https://aur.archlinux.org/rpc/?v=5&type=info&arg[]=";
@@ -16,10 +16,10 @@ struct APIResult {
     results: Vec<Results>,
 }
 
-fn fetch_version(pkgname: &str) -> Result<String> {
+async fn fetch_version(pkgname: &str) -> Result<String> {
     let link = format!("{}{}", AUR_RPC_LINK, pkgname.to_string());
-    let resp = Client::new().get(&link).send()?;
-    let apiresult: APIResult = resp.json()?;
+    let resp = reqwest::get(&link).await?;
+    let apiresult: APIResult = resp.json().await?;
     let results = &apiresult.results;
     let newver: &str;
     if results.len() == 0 {
@@ -30,11 +30,11 @@ fn fetch_version(pkgname: &str) -> Result<String> {
     Ok(newver.to_string())
 }
 
-pub fn fetch_versions(pkglist: &mut HashMap<String, String>) -> Result<HashMap<String, String>> {
+pub async fn fetch_versions(pkglist: &HashMap<String, String>) -> Result<HashMap<String, String>> {
     let mut newpkglist = pkglist.clone();
     for (pkgname, pkgver) in pkglist {
         println!("Fetching package {}", &pkgname);
-        let newver = fetch_version(pkgname)?;
+        let newver = fetch_version(&pkgname).await?;
         if parser::strvercmp(&newver, &pkgver) {
             *newpkglist.get_mut(pkgname).unwrap() = newver;
         }
