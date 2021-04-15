@@ -71,6 +71,7 @@ pub fn fetch_updates(
         info!("Fetching the version of {}...", pkgname);
         let newver = fetch_version(&pkgname)?;
         if parser::strvercmp(&newver, &pkgver) {
+            info!("Detected newer version {} of {} ({})", newver, pkgname, pkgver);
             newpkglist.insert(pkgname.to_string(), newver);
             updatequeue.insert(pkgname.to_string());
         } else {
