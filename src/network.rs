@@ -68,7 +68,7 @@ pub fn fetch_updates(
     let mut updatequeue: HashSet<String> = HashSet::new();
 
     for (pkgname, pkgver) in pkglist {
-        info!("Fetching the version of {}...", &pkgname);
+        info!("Fetching the version of {}...", pkgname);
         let newver = fetch_version(&pkgname)?;
         if parser::strvercmp(&newver, &pkgver) {
             newpkglist.insert(pkgname.to_string(), newver);
