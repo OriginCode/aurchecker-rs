@@ -1,13 +1,16 @@
+#!/usr/bin/env python3
+
 import json
 import subprocess
 from pathlib import Path
 
 
 def genPkgsConf(pkgListPath):
-    # Attempt to load the existing pkgs.json, if !exist, touch one.
-    pkgsWithVer = {}
+    # Create pkgs.json
     if pkgListPath.exists():
         pkgListPath.unlink()
+        pkgListPath.touch()
+    else:
         pkgListPath.touch()
 
     # Get the packages that are not from repositories. Using pacman.
@@ -16,6 +19,7 @@ def genPkgsConf(pkgListPath):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE
                                 ).communicate()[0].decode().split('\n')[:-1]
+    pkgsWithVer = {}
 
     # Generate config.
     for result in pmResult:
@@ -29,5 +33,7 @@ def genPkgsConf(pkgListPath):
 
 
 if __name__ == "__main__":
-    pkgListPath = input('Please tell me where to save package list:\n')
-    genPkgsConf(pkgListPath)
+    if (pkgListPath := Path(input('Please tell me where to save package list:\n')).expanduser()).is_dir():
+        genPkgsConf(pkgListPath / "pkgs.json")
+    else:
+        genPkgsConf(pkgListPath)
