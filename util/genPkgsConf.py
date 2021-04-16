@@ -33,7 +33,11 @@ def genPkgsConf(pkgListPath):
 
 
 if __name__ == "__main__":
-    if (pkgListPath := Path(input('Please tell me where to save package list:\n')).expanduser()).is_dir():
-        genPkgsConf(pkgListPath / "pkgs.json")
+    pkgListPath = Path(input('Please tell me where to save package list (Default: ~/.config/aurchk/pkgs.json):\n'))
+    if pkgListPath == Path():
+        genPkgsConf(Path.home() / '.config' / 'aurchk' / 'pkgs.json')
     else:
-        genPkgsConf(pkgListPath)
+        if pkgListPath.expanduser().is_dir():
+            genPkgsConf(pkgListPath / "pkgs.json")
+        else:
+            genPkgsConf(pkgListPath)
