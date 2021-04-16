@@ -40,7 +40,8 @@ fn write_default_conf(home: &str, path: &str) -> Result<Config> {
     Ok(default_conf)
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let home = dirs::home_dir()
         .unwrap()
         .into_os_string()
@@ -57,7 +58,7 @@ fn main() -> Result<()> {
 
     let pkglist_data = fs::read(&config.pkgListPath)?;
     let pkglist: HashMap<String, String> = serde_json::from_slice(&pkglist_data)?;
-    let newpkglist = network::fetch_updates(&pkglist, &config.pkgClonePath)?;
+    let newpkglist = network::fetch_updates(&pkglist, &config.pkgClonePath).await?;
     let pkglist_file = fs::File::create(&config.pkgListPath)?;
 
     serde_json::to_writer_pretty(pkglist_file, &newpkglist)?;

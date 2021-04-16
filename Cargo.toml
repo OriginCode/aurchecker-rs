@@ -1,6 +1,6 @@
 [package]
 name = "aurchecker"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,7 +10,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
 dirs = "3.0"
-reqwest = { version = "0.11", features = ["json", "blocking"] }
+reqwest = { version = "0.11", features = ["json"] }
 alpm = "1.1"
 git2 = { git = "https://github.com/rust-lang/git2-rs" }
 console = "0.14"
+tokio = { version = "1.0", features = ["full"] }

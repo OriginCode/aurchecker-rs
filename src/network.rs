@@ -3,7 +3,6 @@ use crate::{info, warn};
 use anyhow::Result;
 use console::style;
 use git2::Repository;
-use reqwest::blocking::Client;
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
@@ -24,15 +23,18 @@ struct APIResult {
     results: Vec<Results>,
 }
 
-fn fetch_version(pkgname: &str) -> Result<String> {
+async fn fetch_version(pkgname: &str) -> Result<String> {
     let url = format!("{}{}", AUR_RPC_URL, pkgname.to_string());
-    let resp = Client::new().get(&url).send()?;
-    let apiresult: APIResult = resp.json()?;
+    let resp = reqwest::get(&url).await?;
+    let apiresult: APIResult = resp.json().await?;
     let results = &apiresult.results;
     let newver: &str;
 
     if results.len() == 0 {
-        warn!("The package {} has been removed or cannot be accessed.", pkgname);
+        warn!(
+            "The package {} has been removed or cannot be accessed.",
+            pkgname
+        );
         newver = "null";
     } else {
         newver = &apiresult.results[0].Version;
@@ -41,26 +43,31 @@ fn fetch_version(pkgname: &str) -> Result<String> {
     Ok(newver.to_string())
 }
 
-fn fetch_update(pkgname: &str, pkgclone_path: &str) -> Result<()> {
+async fn fetch_update(pkgname: &str, pkgclone_path: &str) -> Result<()> {
     let pkgpath = format!("{}/{}", pkgclone_path, pkgname);
     let pkgurl = format!("{}{}.git", AUR_URL, pkgname);
 
     if parser::check_existance(&pkgpath) {
         info!("Updating the repo of {}...", pkgname);
-        Command::new("git")
-            .current_dir(Path::new(&pkgpath))
-            .arg("pull")
-            .stdout(Stdio::null())
-            .spawn()?;
+        tokio::spawn(async move {
+            Command::new("git")
+                .current_dir(Path::new(&pkgpath))
+                .arg("pull")
+                .stdout(Stdio::null())
+                .spawn()
+                .unwrap();
+        });
     } else {
         info!("Cloning the repo of {}...", pkgname);
-        Repository::clone(&pkgurl, Path::new(&pkgpath))?;
+        tokio::spawn(async move {
+            Repository::clone(&pkgurl, Path::new(&pkgpath)).unwrap();
+        });
     }
 
     Ok(())
 }
 
-pub fn fetch_updates(
+pub async fn fetch_updates(
     pkglist: &HashMap<String, String>,
     pkgclone_path: &str,
 ) -> Result<HashMap<String, String>> {
@@ -69,9 +76,12 @@ pub fn fetch_updates(
 
     for (pkgname, pkgver) in pkglist {
         info!("Fetching the version of {}...", pkgname);
-        let newver = fetch_version(&pkgname)?;
+        let newver = fetch_version(&pkgname).await?;
         if parser::strvercmp(&newver, &pkgver) {
-            info!("Detected newer version {} of {} ({})", newver, pkgname, pkgver);
+            info!(
+                "Detected newer version {} of {} ({})",
+                newver, pkgname, pkgver
+            );
             newpkglist.insert(pkgname.to_string(), newver);
             updatequeue.insert(pkgname.to_string());
         } else {
@@ -80,7 +90,7 @@ pub fn fetch_updates(
     }
 
     for item in updatequeue.iter() {
-        fetch_update(&item, pkgclone_path)?;
+        fetch_update(&item, pkgclone_path).await?;
     }
 
     Ok(newpkglist)
