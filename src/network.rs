@@ -4,6 +4,7 @@ use anyhow::Result;
 use console::style;
 use git2::Repository;
 use serde::Deserialize;
+use alpm::Version;
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
@@ -19,18 +20,18 @@ struct Results {
 }
 
 #[derive(Deserialize)]
-struct APIResult {
+struct ApiResult {
     results: Vec<Results>,
 }
 
 async fn fetch_version(pkgname: &str) -> Result<String> {
     let url = format!("{}{}", AUR_RPC_URL, pkgname.to_string());
     let resp = reqwest::get(&url).await?;
-    let apiresult: APIResult = resp.json().await?;
+    let apiresult: ApiResult = resp.json().await?;
     let results = &apiresult.results;
     let newver: &str;
 
-    if results.len() == 0 {
+    if results.is_empty() {
         warn!(
             "The package {} has been removed or cannot be accessed.",
             pkgname
@@ -77,7 +78,7 @@ pub async fn fetch_updates(
     for (pkgname, pkgver) in pkglist {
         info!("Fetching the version of {}...", pkgname);
         let newver = fetch_version(&pkgname).await?;
-        if parser::strvercmp(&newver, &pkgver) {
+        if Version::new(newver.as_str()) > Version::new(pkgver.as_str()) {
             info!(
                 "Detected newer version {} of {} ({})",
                 newver, pkgname, pkgver
